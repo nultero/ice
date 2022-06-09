@@ -6,7 +6,6 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"time"
 )
 
 var iceChars = []byte{
@@ -17,8 +16,29 @@ var iceChars = []byte{
 	110, 111, 115, 116, 117, 122, 123,
 }
 
+func getSeed() int64 {
+	fptr, err := os.Open("/dev/urandom")
+	if err != nil {
+		panic(err)
+	}
+	bytes := make([]byte, 5)
+	_, err = fptr.Read(bytes)
+	if err != nil {
+		panic(err)
+	}
+
+	sum := byte(5)
+	for _, b := range bytes {
+		sum += b
+	}
+
+	return int64(sum)
+}
+
 func main() {
-	rand.Seed(time.Now().Unix())
+
+	s := getSeed()
+	rand.Seed(s)
 	idx := rand.Intn(len(iceChars))
 
 	stdin := os.Stdin

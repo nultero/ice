@@ -1,7 +1,7 @@
 use std::{
     fs::File, 
     os::unix::prelude::FileExt, 
-    io::{self, Write}
+    io::{self, Write, Read}
 };
 
 static COLORS: [u8; 42] = [
@@ -28,28 +28,32 @@ fn get_seed() -> usize {
     return sum % COLORS.len();
 }
 
-const S: &str = "\x1b[38;5;";
-const E: &str = "\x1b[0m";
-
 fn fmt_char(c: char, idx: usize) -> String {
     let i = COLORS[idx]; // color byte
-    return format!("{S}{i}m{c}{E}");
+    return format!("\x1b[38;5;{i}m{c}\x1b[0m");
 }
+
+const ERR_WR: &'static str = "err writing to stdout";
 
 fn main() {
     let mut idx = get_seed();
-    let mut buf = String::with_capacity(150);
+    let mut buf = String::with_capacity(500);
 
-    let stdin = io::stdin();
+    let mut stdin = io::stdin();
     let mut stdout = io::stdout();
 
     loop {
-        match stdin.read_line(&mut buf) {
+        match stdin.read_to_string(&mut buf) {
             Ok(n)  => {
-                if n == 0 { break; }
-
+                if n == 0 {
+                    break; 
+                }
+                
                 for c in buf.chars() {
-                    print!("{}", fmt_char(c, idx));
+                    let c = fmt_char(c, idx);
+                    stdout.write(c.as_bytes())
+                          .expect(ERR_WR);
+
                     idx += 1;
                     if idx == 42 { 
                         idx = 0;
@@ -59,7 +63,7 @@ fn main() {
                 stdout.flush().expect("stdout flush err");
             },
 
-            Err(e) => { println!("{:?}", e) }
+            Err(e) => { println!("err => {:?}", e) }
         }
     }
 }
